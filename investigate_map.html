@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Map Interface</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<style>
+     body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh; /* Full height of the viewport */
+        }
+
+        header {
+            background-color: whitesmoke;
+            color: darkblue;
+            display: flex;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .logo {
+            width: 330px;
+            height: auto;
+            margin-right: 15px;
+        }
+
+        h1 {
+            margin: 0;
+            flex: 1;
+            text-align: center;
+            color: darkblue;
+        }
+
+        nav {
+            flex-grow: 1;
+        }
+
+        nav ul {
+            display: flex;
+            list-style-type: none;
+            padding-left: 40px;
+        }
+
+        nav ul li {
+            margin: 10px;
+        }
+
+        nav ul li a {
+            color: darkblue;
+            text-decoration: none;
+            position: relative;
+        }
+
+        /* Dropdown for Map link */
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: white;
+            min-width: 200px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1000;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            top: 100%;
+            left: 0;
+        }
+
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+
+        .dropdown-content a {
+            color: darkblue;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            border-bottom: 1px solid #eee;
+        }
+
+        .dropdown-content a:hover {
+            background-color: #f1f1f1;
+        }
+
+        main {
+            display: flex;
+            justify-content: space-between;
+            padding: 20px;
+            flex: 1;
+        }
+
+        .column {
+            flex: 1;
+            margin: 0 10px;
+        }
+
+        .left {
+            flex: 2;
+            margin-top: 13%;
+        }
+
+        .middle, .right {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .picture {
+            width: 100%;
+            height: auto;
+            margin: 10px 0;
+        }
+
+        .flex-container {
+            display: none; /* Hidden by default */
+            flex: 1; /* Allow it to grow */
+        }
+
+        .flex-container.active {
+            display: flex;
+        }
+
+        #map {
+            height: 80vh;
+            width: 65%;
+            border: 4px solid darkgray;
+            border-radius: 10px;
+        }
+
+        .sidebar {
+            width: 35%;
+            padding: 20px;
+            background-color: #f9f9f9;
+            overflow-y: auto; /* Allow scrolling */
+        }
+
+        .sidebar h2 {
+            margin-top: 0;
+        }
+
+        .facilities {
+            display: none;
+            margin-top: 10px;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+        }
+
+        .place-item {
+            margin-bottom: 15px;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .place-item:hover {
+            background-color: #f0f8ff;
+            border-color: #007bff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .place-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: darkblue;
+            margin-bottom: 8px;
+        }
+
+        .place-description {
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .place {
+            display: block;
+            color: darkblue;
+            text-decoration: none;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+
+        .place:hover {
+            background-color: #e9e9e9;
+        }
+
+        .facility {
+            display: block;
+            margin: 5px 0;
+            padding: 8px 12px;
+            background-color: #e8f4fd;
+            border: 1px solid #b3d9ff;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .facility:hover {
+            background-color: #d1ecf1;
+            border-color: #86cfda;
+        }
+
+        .facility-item {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 10px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .facility-item:hover {
+            background-color: #e9ecef;
+            border-color: #adb5bd;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .facilities-grid {
+            max-height: 380px;
+            overflow-y: auto;
+        }
+
+        .places-grid {
+            max-height: 380px;
+            overflow-y: auto;
+        }
+
+        .back-button {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+
+        .back-button:hover {
+            background-color: #0056b3;
+        }
+
+        /* Modal styles for image popup */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 10000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.9);
+        }
+
+        .modal-content {
+            margin: auto;
+            display: block;
+            width: 80%;
+            max-width: 700px;
+            max-height: 80%;
+            object-fit: contain;
+        }
+
+        .modal-content, #caption {
+            animation-name: zoom;
+            animation-duration: 0.6s;
+        }
+
+        @keyframes zoom {
+            from {transform: scale(0)} 
+            to {transform: scale(1)}
+        }
+
+        .close {
+            position: absolute;
+            top: 30px;
+            right: 50px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            transition: 0.3s;
+            cursor: pointer;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: #bbb;
+        }
+
+        #caption {
+            margin: auto;
+            display: block;
+            width: 80%;
+            max-width: 700px;
+            text-align: center;
+            color: #ccc;
+            padding: 10px 0;
+            height: 150px;
+        }
+
+        .popup-image {
+            width: 150px;
+            height: 100px;
+            object-fit: cover;
+            cursor: pointer;
+            border-radius: 5px;
+            margin: 5px 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .popup-image:hover {
+            opacity: 0.8;
+        }
+
+        footer {
+            background-color: whitesmoke;
+            color: darkblue;
+            text-align: center;
+            padding: 20px;
+        }
+</style>
+</head>
+<body>
+    <header>
+        <a href="#" id="logoLink">
+            <img src="https://stracomm.usim.edu.my/wp-content/uploads/2018/05/LOGO-1Bs.png" alt="USIM Logo" class="logo">
+        </a>
+        <h1>Disability Facility</h1>
+        <nav>
+            <ul>
+                <li><a href="#" id="homeLink">Home</a></li>
+                <li class="dropdown">
+                    <a href="#" id="mapLink">Map</a>
+                    <div class="dropdown-content">
+                        <a href="#" class="dropdown-place" data-name="Faculty of Quran Sunnah">Faculty of Quran Sunnah</a>
+                        <a href="#" class="dropdown-place" data-name="Faculty of Syariah and Law">Faculty of Syariah and Law</a>
+                        <a href="#" class="dropdown-place" data-name="Faculty of Leadership and Management">Faculty of Leadership and Management</a>
+                        <a href="#" class="dropdown-place" data-name="Faculty of Economy and Muamalat">Faculty of Economy and Muamalat</a>
+                        <a href="#" class="dropdown-place" data-name="Faculty of Language Study">Faculty of Language Study</a>
+                        <a href="#" class="dropdown-place" data-name="Faculty of Science and Technology">Faculty of Science and Technology</a>
+                        <a href="#" class="dropdown-place" data-name="Tamhidi Center">Tamhidi Center</a>
+                        <a href="#" class="dropdown-place" data-name="Islamic Center">Islamic Center</a>
+                        <a href="#" class="dropdown-place" data-name="Residential College 1">Residential College 1</a>
+                    </div>
+                </li>
+                <li><a href="#" id="contactLink">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main id="mainContent">
+        <div class="column left" id="homeContent">
+            <h2>USIM: No One Left Behind - Persons with Disabilities Have Rights Too</h2>
+            <p>At USIM, we students believe that everyone deserves equal opportunities to learn and grow. We are proud of the inclusive facilities and support services on our campus that ensure no one is left behind. With accessible spaces and dedicated resources, USIM empowers us to work together towards a truly inclusive and welcoming academic environment.</p>
+        </div>
+        <div class="column middle">
+            <img src="https://i.postimg.cc/mDtQtQ0Z/IMG-5535.jpg" alt="replace" class="picture">
+            <img src="https://i.postimg.cc/ry4VMDKS/RAMP-FPQS.jpg" alt="replace" class="picture">
+        </div>
+        <div class="column right">
+            <img src="https://i.postimg.cc/7ZkMmJTX/IMG-5532.jpg" alt="replace" class="picture">
+            <img src="https://i.postimg.cc/j5wsW5vY/TP3.jpg" alt="replace" class="picture">
+        </div>
+    </main>
+
+    <div class="flex-container" id="mapContainer">
+        <div id="map"></div> <!-- The map div -->
+        <div class="sidebar">
+            <h2 style="font-family: Georgia, 'Times New Roman', Times, serif">Places & Facilities</h2>
+            <div id="facilitiesList">
+                <!-- Content will be populated dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>Universiti Sains Islam Malaysia - Disability Facility. All rights reserved. - Faris Naim</p>
+    </footer>
+
+    <!-- Modal for image enlargement -->
+    <div id="imageModal" class="modal">
+        <span class="close">&times;</span>
+        <img class="modal-content" id="modalImage">
+        <div id="caption"></div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+    let map;
+        let currentPlace = null;
+
+        // Place data with facilities and polygon coordinates (8 places, 4 facilities each)
+        const placesData = {
+            "Faculty of Quran Sunnah": {
+                coordinates: [2.840837, 101.784052],
+                image: "https://i.postimg.cc/4xgL9rcx/image.png",
+                description: "FPQS",
+                facilities: [
+                    { name: "Wheelchair Ramp", coordinates: [2.840438, 101.783894], image: "https://i.postimg.cc/rs5MJPvh/IMG-5524.jpg" },
+                    { name: "Braille Elevator", coordinates: [2.840596, 101.784014], image: "https://i.postimg.cc/V6xzX8Hr/LIF-DALAM.jpg" },
+                    { name: "Tactile Paving", coordinates: [2.840976, 101.784173], image: "https://i.postimg.cc/MZfTHsrf/TP2.jpg" },
+                    { name: "Toilet For Disable", coordinates: [2.841322, 101.783760], image: "https://i.postimg.cc/zffDrpgB/TANDAS-OKU.jpg" },
+                    { name: "Toilet For Disable", coordinates: [2.840663, 101.783454], image: "https://i.postimg.cc/tgmqCP3z/TANDAS-OKUQ.jpg" }
+                ],
+                polygon: [
+                    [2.840446, 101.783896],
+                    [2.840649, 101.783389],
+                    [2.841394, 101.783711],
+                    [2.841183, 101.784199],
+                    [2.840976, 101.784173],
+                    [2.840596, 101.784014],
+                    [2.840438, 101.783894]
+
+                ]
+            },
+            "Faculty of Syariah and Law": {
+                coordinates: [2.839093, 101.781732],
+                image: "https://i.postimg.cc/8c7RWCy6/photo-26-2025-06-22-20-49-19.jpg",
+                description: "FSU",
+                facilities: [
+                    { name: "OKU Parking", coordinates: [2.839044, 101.781313], image: "https://i.postimg.cc/SRHWGp5t/photo-29-2025-06-22-20-49-19.jpg" },
+                    { name: "Wheelchair Ramp", coordinates: [2.838846, 101.781485], image: "https://i.postimg.cc/7PtXLFBz/photo-25-2025-06-22-20-49-19.jpg" },
+                    { name: "Toilet For Disable", coordinates: [2.839331, 101.781431], image: "https://i.postimg.cc/SKGfb32J/photo-28-2025-06-22-20-49-19.jpg" }
+                ],
+                polygon: [
+                    [2.839795, 101.781289],
+                    [2.839543, 101.781850],
+                    [2.839350, 101.782199],
+                    [2.838970, 101.782113],
+                    [2.838846, 101.782359],
+                    [2.838354, 101.782134],
+                    [2.838477, 101.781828],
+                    [2.838841, 101.781469],
+                    [2.839072, 101.781549],
+                    [2.839318, 101.781099],
+                    [2.839618, 101.781211]
+
+                ]
+            },
+            "Faculty of Leadership and Management": {
+                coordinates: [2.841456, 101.782832],
+                image: "https://i.postimg.cc/7LbLMQvp/image.png",
+                description: "FKP",
+                facilities: [
+                    { name: "OKU Parking", coordinates: [2.841392, 101.782612], image: "https://i.postimg.cc/mDtQtQ0Z/IMG-5535.jpg" },
+                    { name: "Wheelchair Ramp", coordinates: [2.841656, 101.782413], image: "https://i.postimg.cc/VkW9Tsqw/IMG-5534.jpg" },
+                    { name: "Braille Elevator", coordinates: [2.841419, 101.782987], image: "https://i.postimg.cc/7ZkMmJTX/IMG-5532.jpg" },
+                    { name: "Toilet For Disable", coordinates: [2.841860, 101.782633], image: "https://i.postimg.cc/HWr2xgg0/IMG-5528.jpg" }
+                ],
+                polygon: [
+                    [2.840738, 101.782896],
+                    [2.841574, 101.783336],
+                    [2.842099, 101.783132],
+                    [2.841927, 101.782418],
+                    [2.841434, 101.782563],
+                    [2.841049, 101.782413],
+                    [2.840915, 101.782714],
+                    [2.840807, 101.782697]
+                ]
+            },
+            "Faculty of Economy and Muamalat": {
+                coordinates: [2.841386, 101.779334],
+                image: "https://i.postimg.cc/jjvSb4ss/photo-33-2025-06-22-20-49-19.jpg",
+                description: "FEM",
+                facilities: [
+                    { name: "Wheelchair Ramp", coordinates: [2.841488, 101.779441], image: "https://i.postimg.cc/9FTTjKsC/photo-32-2025-06-22-20-49-19.jpg" },
+                    { name: "Braille Elevator", coordinates: [2.841291, 101.779726], image: "https://i.postimg.cc/xjBHhnx6/photo-21-2025-06-22-20-49-19.jpg" },
+                    { name: "Toilet For Disable", coordinates: [2.841264, 101.779270], image: "https://i.postimg.cc/Z0kTcfLL/photo-31-2025-06-22-20-49-19.jpg" }
+                ],
+                polygon: [
+                    [2.842142, 101.779109],
+                    [2.841611, 101.780031],
+                    [2.840363, 101.779441],
+                    [2.840631, 101.778760],
+                    [2.841649, 101.778578],
+                    [2.842067, 101.778561]
+
+                ]
+            },
+            "Faculty of Language Study": {
+                coordinates: [2.843042, 101.777907],
+                image: "https://i.postimg.cc/pXXbNMmn/photo-27-2025-06-22-20-49-19.jpg",
+                description: "FPBU",
+                facilities: [
+                    { name: "OKU Parking", coordinates: [2.842777, 101.777896], image: "https://i.postimg.cc/8PK8NXvX/photo-8-2025-06-22-20-49-19.jpg" },
+                    { name: "Wheelchair Ramp", coordinates: [2.842958, 101.777499], image: "https://i.postimg.cc/65YKT5k0/photo-30-2025-06-22-20-49-19.jpg" },
+                    { name: "Braille Elevator", coordinates: [2.842705, 101.777719], image: "https://i.postimg.cc/5Nx1xFRy/photo-7-2025-06-22-20-49-19.jpg" },
+                    { name: "Toilet For Disable", coordinates: [2.843001, 101.777875], image: "https://i.postimg.cc/NGxqPjjc/photo-28-2025-06-22-20-49-19.jpg" }
+                ],
+                polygon: [
+                    [2.843717, 101.777537],
+                    [2.843358, 101.778288],
+                    [2.842913, 101.778454],
+                    [2.842259, 101.778095],
+                    [2.841954, 101.777371],
+                    [2.842817, 101.777301],
+                    [2.843444, 101.777478]
+
+                ]
+            },
+            "Faculty of Science and Technology": {
+                coordinates: [2.851952, 101.768291],
+                image: "https://i.postimg.cc/52hR2h2g/photo-24-2025-06-22-20-49-19.jpg",
+                description: "FST",
+                facilities: [
+                    
+                    { name: "Wheelchair Ramp", coordinates: [2.851689, 101.768535], image: "https://i.postimg.cc/52hR2h2g/photo-24-2025-06-22-20-49-19.jpg" },
+                    { name: "Braille Elevator", coordinates: [2.851859, 101.768530], image: "https://i.postimg.cc/t4Zcyqp7/photo-16-2025-06-22-20-49-19.jpg" },
+                    { name: "Toilet For Disable", coordinates: [2.851950, 101.768490], image: "https://i.postimg.cc/HxHvQb57/photo-18-2025-06-22-20-49-19.jpg" }
+                ],
+                polygon: [
+                    [2.852686, 101.767693],
+                    [2.852536, 101.768643],
+                    [2.851180, 101.768712],
+                    [2.851223, 101.767881],
+                    [2.851914, 101.767597],
+                    [2.852498, 101.767634]
+
+                ]
+            },
+            "Tamhidi Center": {
+                coordinates: [2.838791, 101.783285],
+                image: "https://i.postimg.cc/0NpPkdP6/photo-5-2025-06-22-20-49-19.jpg",
+                description: "Pusat Tamhidi",
+                facilities: [
+                    { name: "Wheelchair Ramp", coordinates: [2.838614, 101.783427], image: "https://i.postimg.cc/RF49N6Zg/photo-2-2025-06-22-20-49-19.jpg" },
+                    { name: "Braille Elevator", coordinates: [2.838630, 101.783352], image: "https://i.postimg.cc/2StVbxs2/photo-3-2025-06-22-20-49-19.jpg" },
+                    { name: "Toilet For Disable", coordinates: [2.838899, 101.783167], image: "https://i.postimg.cc/pdNPM1bb/photo-1-2025-06-22-20-49-19.jpg" }
+                ],
+                polygon: [
+                    [2.838978, 101.783065],
+                    [2.838956, 101.783175],
+                    [2.838908, 101.783446],
+                    [2.838820, 101.783580],
+                    [2.838675, 101.783529],
+                    [2.838565, 101.783440],
+                    [2.838630, 101.783124],
+                    [2.838670, 101.783011],
+                    [2.838739, 101.783025],
+                    [2.838761, 101.782982],
+                    [2.838927, 101.783043]
+                ]
+            },
+            "Islamic Center": {
+                coordinates: [2.845338, 101.780380],
+                image: "https://i.postimg.cc/RFFss4sM/photo-23-2025-06-22-20-49-19.jpg",
+                description: "Pusat Islam, KITM",
+                facilities: [
+                    { name: "Tactile Paving", coordinates: [2.845385, 101.779991], image: "https://i.postimg.cc/QCK6DSZw/photo-20-2025-06-22-20-49-19.jpg" },
+                    { name: "Wheelchair Ramp", coordinates: [2.845156, 101.780093], image: "https://i.postimg.cc/gJS5mnXX/photo-15-2025-06-22-20-49-19.jpg" },
+                    { name: "Toilet For Disable", coordinates: [2.845239, 101.779919], image: "https://i.postimg.cc/T2ZxD41y/photo-19-2025-06-22-20-49-19.jpg" }
+                ],
+                polygon: [
+                    [2.8457626, 101.7800070],
+                    [2.8457139, 101.7799865 ],
+                    [2.8457226, 101.7799461],
+                    [2.8453305, 101.7798142 ],
+                    [2.8452935, 101.7798768 ],
+                    [2.8452067, 101.7798472],
+                    [2.8451330, 101.7800238 ],
+                    [2.8450324, 101.7799843 ],
+                    [2.8449808, 101.7800935 ],
+                    [2.8450813, 101.7801427 ],
+                    [2.8449522, 101.7804865 ],
+                    [2.8450729, 101.7805151 ],
+                    [2.8450276, 101.7806371 ],
+                    [2.8450033, 101.7807713 ],
+                    [2.8450561, 101.7808485 ],
+                    [2.8451808, 101.7808828 ],
+                    [2.8452185, 101.7808932 ],
+                    [2.8453525, 101.7808688 ],
+                    [2.8454377, 101.7806452 ],
+                    [2.8455799, 101.7806900 ],
+                    [2.8455880, 101.7806574 ],
+                    [2.8456814, 101.7806818 ],
+                    [2.8457342, 101.7805843 ],
+                    [2.8455920, 101.7805233 ],
+                    [2.8457066, 101.7803496 ],
+                    [2.8457490, 101.7803684 ],
+                    [2.8458045, 101.7803890 ],
+                    [2.8458493, 101.7802803 ],
+                    [2.8458014, 101.7802543 ],
+                    [2.8457476, 101.7802329 ],
+                    [2.8457991, 101.7800679 ],
+                    [2.8457626, 101.7800070 ]
+
+                ]
+            },
+            "Residential College 1": {
+                coordinates: [2.848654, 101.780587],
+                image: "https://i.postimg.cc/25m7sZS4/main-gate-kk1.jpg",
+                description: "KK1, USIM",
+                facilities: [
+                    { name: "Wheelchair Ramp", coordinates: [2.849174, 101.780211], image: "https://i.postimg.cc/T1n4mQNm/photo-14-2025-06-22-20-49-19.jpg" },
+                    { name: "Toilet for Disable", coordinates: [2.848215, 101.781217], image: "https://i.postimg.cc/vmkz8f8V/image.png" },
+                    { name: "OKU Parking", coordinates: [2.848994, 101.780401], image: "https://i.postimg.cc/FRvYxHD6/photo-13-2025-06-22-20-49-19.jpg" },
+                    { name: "House for Disable", coordinates: [2.848370, 101.781187], image: "https://i.postimg.cc/vmkz8f8V/image.png" }
+                ],
+                polygon: [
+                    [2.849661, 101.779932,0],
+                    [2.848933, 101.779490,0],
+                    [2.848812, 101.779514,0],
+                    [2.848633, 101.779785,0],
+                    [2.848054, 101.780120,0],
+                    [2.847923, 101.780562,0],
+                    [2.847931, 101.781048,0],
+                    [2.848041, 101.781386,0],
+                    [2.848504, 101.781501,0],
+                    [2.849125, 101.781480,0],
+                    [2.849487, 101.781093,0],
+                    [2.849584, 101.780817,0],
+                    [2.849677, 101.780047,0]
+                ]
+            }
+        };
+
+        function initializeMap(placeName = null) {
+            // Clear any existing map
+            if (map) {
+                map.remove();
+            }
+            
+            if (placeName && placesData[placeName]) {
+                // Show specific place map
+                const placeData = placesData[placeName];
+                map = L.map('map').setView(placeData.coordinates, 18);
+                currentPlace = placeName;
+                
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 20,
+                    attribution: 'Faris Naim: Journalism Student Kohort 22/26, openStreetMap'
+                }).addTo(map);
+
+                // Add polygon for the building
+                const polygon = L.polygon(placeData.polygon, {
+                    color: 'red',
+                    fillColor: '#f03',
+                    fillOpacity: 0.3
+                }).addTo(map);
+                
+
+                polygon.bindPopup(`<strong>${placeName}</strong><br>Building Area`);
+                
+                // Add facility markers
+                placeData.facilities.forEach(facility => {
+                    const marker = L.marker(facility.coordinates).addTo(map);
+                    marker.bindPopup(`
+                        <div style="text-align: center;">
+                            <strong>${facility.name}</strong><br>
+                            <em>at ${placeName}</em><br>
+                            <img src="${facility.image}" alt="${facility.name}" class="popup-image" 
+                                 onclick="openImageModal('${facility.image}', '${facility.name}')">
+                            <br><small>Click image to enlarge</small>
+                        </div>
+                    `);
+                });
+                
+                // Update sidebar with facilities
+                updateFacilitiesList(placeName);
+                
+            } else {
+                // Show general map with all places
+                map = L.map('map').setView([2.84438, 101.78099], 14);
+                currentPlace = null;
+                
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 20,
+                    attribution: 'Faris Naim: Journalism Student Kohort 22/26'
+                }).addTo(map);
+                
+                // Add all places as markers
+                Object.keys(placesData).forEach(placeName => {
+                    const placeData = placesData[placeName];
+                    const marker = L.marker(placeData.coordinates).addTo(map);
+                    
+                    marker.bindPopup(`
+                        <div style="text-align: center;">
+                            <strong>${placeName}</strong><br>
+                            <img src="${placeData.image}" alt="${placeName}" class="popup-image" 
+                                 onclick="openImageModal('${placeData.image}', '${placeName}')"><br>
+                            <small>Click image to enlarge</small><br>
+                            <button onclick="showPlaceDetails('${placeName}')" style="margin-top: 10px; padding: 5px 10px; background-color: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer;">View Facilities</button>
+                        </div>
+                    `);
+                });
+                
+                // Show all places list in sidebar
+                showAllPlacesList();
+            }
+            
+            // Force map to resize after it's visible
+            setTimeout(function() {
+                map.invalidateSize();
+            }, 100);
+        }
+
+        function showAllPlacesList() {
+            const facilitiesContainer = document.getElementById('facilitiesList');
+            
+            let placesHTML = '<h3>All Places</h3>';
+            placesHTML += '<div class="places-grid">';
+            
+            Object.keys(placesData).forEach(placeName => {
+                const placeData = placesData[placeName];
+                placesHTML += `
+                    <div class="place-item" onclick="showPlaceDetails('${placeName}')">
+                        <div class="place-name">${placeName}</div>
+                        <div class="place-description">${placeData.description}</div>
+                        <div style="font-size: 14px; color: #888;">
+                            ${placeData.facilities.length} facilities available here
+                        </div>
+                    </div>
+                `;
+            });
+            
+            placesHTML += '</div>';
+            
+            facilitiesContainer.innerHTML = placesHTML;
+        }
+
+        function updateFacilitiesList(placeName) {
+            const facilitiesContainer = document.getElementById('facilitiesList');
+            const placeData = placesData[placeName];
+            
+            if (!placeData) return;
+            
+            let facilitiesHTML = `<h3>${placeName}</h3>`;
+            facilitiesHTML += '<div class="facilities-grid">';
+            
+            placeData.facilities.forEach((facility, index) => {
+                facilitiesHTML += `
+                    <div class="facility-item" onclick="focusOnFacility('${placeName}', ${index})">
+                        <strong>${facility.name}</strong>
+                        <p>Click to locate on map</p>
+                    </div>
+                `;
+            });
+            
+            facilitiesHTML += '</div>';
+            facilitiesHTML += `<button class="back-button" onclick="showAllPlaces()">← Back to All Places</button>`;
+            
+            facilitiesContainer.innerHTML = facilitiesHTML;
+        }
+
+        function focusOnFacility(placeName, facilityIndex) {
+            const facility = placesData[placeName].facilities[facilityIndex];
+            if (map && facility) {
+                map.setView(facility.coordinates, 20);
+                // Find and open the popup for this facility
+                map.eachLayer(function(layer) {
+                    if (layer instanceof L.Marker) {
+                        const markerLatLng = layer.getLatLng();
+                        if (markerLatLng.lat === facility.coordinates[0] && markerLatLng.lng === facility.coordinates[1]) {
+                            layer.openPopup();
+                        }
+                    }
+                });
+            }
+        }
+
+        function showPlaceDetails(placeName) {
+            initializeMap(placeName);
+        }
+
+        function showAllPlaces() {
+            initializeMap(); // This will show the general map and populate the places list
+        }
+
+        // Function to open image modal
+        function openImageModal(imageSrc, imageName) {
+            const modal = document.getElementById('imageModal');
+            const modalImg = document.getElementById('modalImage');
+            const captionText = document.getElementById('caption');
+            
+            modal.style.display = 'block';
+            modalImg.src = imageSrc;
+            captionText.innerHTML = imageName;
+        }
+
+        // Function to close image modal
+        function closeImageModal() {
+            document.getElementById('imageModal').style.display = 'none';
+        }
+
+        // Make functions globally available
+        window.showPlaceDetails = showPlaceDetails;
+        window.showAllPlaces = showAllPlaces;
+        window.openImageModal = openImageModal;
+
+        // Navigation event handlers
+        document.getElementById("mapLink").onclick = function(event) {
+            event.preventDefault();
+            document.getElementById('mainContent').style.display = 'none';
+            document.getElementById('mapContainer').classList.add('active');
+            initializeMap();
+        };
+
+        document.getElementById("homeLink").onclick = function(event) {
+            event.preventDefault();
+            document.getElementById('mapContainer').classList.remove('active');
+            document.getElementById("mainContent").style.display = 'flex';
+            // Reset home content
+            document.getElementById("mainContent").innerHTML = `
+                <div class="column left" id="homeContent">
+                    <h2 style="font-family: Georgia, 'Times New Roman', Times, serif">USIM: No One Left Behind—Persons with Disabilities Have Rights Too</h2>
+                    <p>At USIM, we students believe that everyone deserves equal opportunities to learn and grow. We are proud of the inclusive facilities and support services on our campus that ensure no one is left behind. With accessible spaces and dedicated resources, USIM empowers us to work together towards a truly inclusive and welcoming academic environment.</p>
+                </div>
+                <div class="column middle">
+                    <img src="image/main gate kk1.jpg" alt="KK1" class="picture">
+                    <img src="image/lobi kk1.jpg" alt="Lobby KK1" class="picture">
+                </div>
+                <div class="column right">
+                    <img src="image/sign kkac.jpg" alt="KKAC Sign" class="picture">
+                    <img src="image/blok kkac.jpg" alt="KKAC Block" class="picture">
+                </div>
+            `;
+        };
+
+        document.getElementById("contactLink").onclick = function(event) {
+            event.preventDefault();
+            document.getElementById('mapContainer').classList.remove('active');
+            document.getElementById("mainContent").style.display = 'flex';
+            // Update main content to display contact information
+            document.getElementById("mainContent").innerHTML = `
+                <div class="column left">
+                    <h1 style="font-family: Georgia, 'Times New Roman', Times, serif; font-size:45px;">Contact Me</h1>
+                    <p style="font-family: Georgia, 'Times New Roman', Times, serif; font-size: 20px;">For inquiries, please reach out to me via email or phone.</p>
+                </div>
+                <div class="column middle">
+                    <img src="https://i.postimg.cc/hjTNmbWz/contact.png" alt="Contact Icon" style="width: 100%; height: auto;">
+                    <p style="font-family: Georgia, 'Times New Roman', Times, serif; font-size: 19px;">Reach me on:</p>
+                    <p style="font-family: Georgia, 'Times New Roman', Times, serif; font-size: 19px;">Phone - 6019 914 7010 </p>
+                    <p style="font-family: Georgia, 'Times New Roman', Times, serif; font-size: 19px;"> ~ Faris  Naim ~</p>
+                    <p style="font-family: Georgia, 'Times New Roman', Times, serif; font-size: 19px;"> Email Me on:</p>
+                    <a style="font-family: Georgia, 'Times New Roman', Times, serif; font-size: 16px;" href="mailto:farisnaimss@raudah.usim.edu.my">farisnaimss@raudah.usim.edu.my</a>
+                    
+                </div>
+                <div class="column right">
+                    <img src="https://i.postimg.cc/mZFgd0RC/naim.png" alt="Contact Image" style="width: 100%; height: auto;">
+                </div>
+                `
+            ;
+        };
+
+        // Logo link functionality
+        document.getElementById("logoLink").onclick = function(event) {
+            event.preventDefault();
+            document.getElementById('mapContainer').classList.remove('active');
+            document.getElementById("mainContent").style.display = 'flex';
+        };
+
+        // Dropdown place handlers
+        document.addEventListener('DOMContentLoaded', function() {
+            // Modal close functionality
+            const modal = document.getElementById('imageModal');
+            const closeBtn = document.getElementsByClassName('close')[0];
+            
+            // Close modal when clicking the X
+            closeBtn.onclick = function() {
+                closeImageModal();
+            }
+            
+            // Close modal when clicking outside the image
+            modal.onclick = function(event) {
+                if (event.target === modal) {
+                    closeImageModal();
+                }
+            }
+            
+            // Close modal with ESC key
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape') {
+                    closeImageModal();
+                }
+            });
+            
+            // Dropdown place handlers
+            document.querySelectorAll('.dropdown-place').forEach(item => {
+                item.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    const placeName = item.getAttribute('data-name');
+                    
+                    // Show map view
+                    document.getElementById('mainContent').style.display = 'none';
+                    document.getElementById('mapContainer').classList.add('active');
+                    
+                    // Initialize map for specific place
+                    initializeMap(placeName);
+                });
+            });
+        });
+</script>
+</body>
+</html>
